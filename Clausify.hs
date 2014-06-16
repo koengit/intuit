@@ -62,8 +62,8 @@ simplify (p :<=>: q) = simplify p .<=>. simplify q
   p .<=>. q | p == q = TRUE
   TRUE  .<=>. q     = q
   p     .<=>. TRUE  = p
-  FALSE .<=>. q     = q :=>: FALSE
-  p     .<=>. FALSE = p :=>: FALSE
+  FALSE .<=>. q     = q :=>: Atom false
+  p     .<=>. FALSE = p :=>: Atom false
   p     .<=>. q     = p :<=>: q
 
 simplify p = p
