@@ -11,36 +11,46 @@ import Clausify
 import qualified Data.Map as M
 import qualified Data.Set as S
 import Data.List
+import Control.Monad ( when )
 
 --------------------------------------------------------------------------------
 -- main
 
 main :: IO ()
 main =
-  do [file] <- getArgs
-     putStrLn ("+++ Reading file '" ++ show file ++ "'...")
+  do as <- getArgs
+     case as of
+       [file] -> withParse True file process
+       [file,"-fCube"]     -> withParse False file (putStrLn . showFCubeProblem)
+       [file,"-IntHistGC"] -> withParse False file (putStrLn . showIntHistGCProblem)
+       _      -> error "name of file to process required!"
+
+withParse :: Bool -> String -> ([Input Form] -> IO ()) -> IO ()
+withParse verbose file h =
+  do when verbose (putStrLn ("+++ Reading file '" ++ show file ++ "'..."))
      mfs <- readProblem file
      case mfs of
-       Nothing ->
-         do return ()
-       
-       Just fs ->
-         do putStrLn ("+++ Found " ++ show (length fs) ++ " formulas")
-            --putStrLn "=== INPUT FORMULAS ==="
-            --putStr $ unlines $ map show fs
-            --putStrLn "=== GOALIFIED FORMULAS ==="
-            --putStr $ unlines $ map show (goalify fs)
-            putStrLn ("+++ Clausification...")
-            let (cs,ics) = clausify (goalify fs)
-            putStrLn ("+++ Created " ++ show (length cs) ++ " flat clauses and "
-                                     ++ show (length ics) ++ " implication clauses")
-            --putStrLn "=== INPUT CLAUSES ==="
-            --putStr $ unlines $ map show cs
-            --putStrLn "--- IMPLICATION CLAUSES ---"
-            --putStr $ unlines $ map show ics
-            putStr ("+++ Proving")
-            hFlush stdout
-            proveProblem cs ics
+       Nothing -> do return ()
+       Just fs -> do h fs
+
+process :: [Input Form] -> IO ()
+process fs =
+  do putStrLn ("+++ Found " ++ show (length fs) ++ " formulas")
+     --putStrLn "=== INPUT FORMULAS ==="
+     --putStr $ unlines $ map show fs
+     --putStrLn "=== GOALIFIED FORMULAS ==="
+     --putStr $ unlines $ map show (goalify fs)
+     putStrLn ("+++ Clausification...")
+     let (cs,ics) = clausify (goalify fs)
+     putStrLn ("+++ Created " ++ show (length cs) ++ " flat clauses and "
+                              ++ show (length ics) ++ " implication clauses")
+     --putStrLn "=== INPUT CLAUSES ==="
+     --putStr $ unlines $ map show cs
+     --putStrLn "--- IMPLICATION CLAUSES ---"
+     --putStr $ unlines $ map show ics
+     putStr ("+++ Proving")
+     hFlush stdout
+     proveProblem cs ics
 
 --------------------------------------------------------------------------------
 
@@ -62,7 +72,7 @@ proveProblem cs ics =
   do -- create solver
      sat <- newSolver
      eliminate sat True -- off
-     
+
      -- create literals
      univ <- sequence [ newLit sat | _ <- names ]
      let lits  = M.fromList (names `zip` univ)
@@ -70,7 +80,7 @@ proveProblem cs ics =
 
      -- false
      addClause sat [neg (lit false)]
-     
+
      -- classical clauses
      sequence_
        [ addClause sat (map (neg . lit) as ++ map lit bs)
@@ -89,12 +99,12 @@ proveProblem cs ics =
                              sequence_ [ addClause sat [neg c, c1] | c1 <- cs ]
                              return ((a:->b):->c)
                | ((a:->b),cs) <- M.toList sames
-               ]    
+               ]
      sequence_
        [ addClause sat [neg b, c] -- first, crude approximation
        | ((_:->b):->c) <- intcs'
        ]
-     
+
      -- proving
      simplify sat
      mass <- prove sat True 0 univ ([] :-> lit goal) intcs'
@@ -132,19 +142,19 @@ check sat d univ (assumps :-> goal) impls =
               | ((a:->b):->c) <- impls
               ]
      let impls' = [ impl | (impl,True) <- impls `zip` trigs ]
-     
+
      -- compute all true values
      vals <- sequence [ modelValueBool sat x | x <- univ ]
      let trues = [ x | (x,True) <- univ `zip` vals ]
-     
+
      let checkImpls Nothing [] =
            -- all implications check out; model found
            do return Nothing
-     
+
          checkImpls (Just impls') [] =
            -- something was wrong; need to try again
            do prove sat True d univ (assumps :-> goal) (reverse impls' ++ (impls \\ impls'))
-     
+
          checkImpls mimpl ((impl@((a:->b):->c),impls'):cases) =
            -- could we have proven (a->b) in the found model?
            do mass <- prove sat (isNothing mimpl) (d+1) univ ((a:trues) :-> b) impls'
@@ -156,7 +166,7 @@ check sat d univ (assumps :-> goal) impls =
                                checkImpls (case mimpl of
                                              Just impls -> Just (impl:impls)
                                              Nothing    -> Just [impl]) cases
-     
+
      checkImpls Nothing (select impls')
 
 select :: [a] -> [(a,[a])]

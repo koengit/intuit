@@ -9,6 +9,7 @@ module Clausify
  where
 
 import ParseProblem hiding ( name )
+import qualified Control.Applicative as CA
 import qualified Data.Map as M
 import Data.List
 import Control.Monad
@@ -38,7 +39,7 @@ simplify (p :&: q) = simplify p .&. simplify q
   FALSE .&. q     = FALSE
   p     .&. FALSE = FALSE
   p     .&. q     = p :&: q
-  
+
 simplify (p :|: q) = simplify p .|. simplify q
  where
   p .|. q | p == q = p
@@ -119,7 +120,7 @@ namesAnd (p :&: q) = do as <- namesAnd p
                         return (as ++ bs)
 namesAnd p         = do a <- nameImpliedBy p
                         return [a]
-                        
+
 namesOr :: Form -> M [Name]
 namesOr (p :|: q) = do as <- namesOr p
                        bs <- namesOr q
@@ -129,7 +130,7 @@ namesOr p         = do a <- nameThatImplies p
 
 nameEquivWith   = name True True
 nameThatImplies = name True False
-nameImpliedBy   = name False True 
+nameImpliedBy   = name False True
 
 name :: Bool -> Bool -> Form -> M Name
 name impls impld (Atom a) =
@@ -199,6 +200,10 @@ instance Functor M where
   f `fmap` M h =
     M (\c n -> let (x, c', n', cs, ics) = h c n in (f x, c', n', cs, ics))
 
+instance CA.Applicative M where
+  pure  = return
+  (<*>) = ap
+
 instance Monad M where
   return x =
     M (\c n -> (x, c, n, List [], List []))
@@ -224,7 +229,7 @@ nameFor impls impld t =
                  , List []
                  , List []
                  )
-                   
+
                Nothing -> n' `seq`
                  ( (x, impls, impld)
                  , M.insert t' (x, impls, impld) c
@@ -237,7 +242,7 @@ nameFor impls impld t =
                  x  = p n)
  where
   t' = norm t
- 
+
   norm (a :&&: b)   | a > b = b :&&: a
   norm (a :||: b)   | a > b = b :||: a
   norm (a :<==>: b) | a > b = b :<==>: a
