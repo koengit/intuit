@@ -1,0 +1,99 @@
+\documentclass{article}
+\usepackage{tikz}
+\usepackage{pgfplots}
+\usepackage[margin=1cm]{geometry}
+\usepackage{pgfplotstable}
+\begin{document}
+
+\newcommand{\scatterplot}[4]{
+
+\begin{tikzpicture}
+\begin{axis}[
+  xlabel={#1},
+  ylabel={#2},
+  enlargelimits=false,
+  axis lines=left,
+  grid = major,
+  xmode = log,
+  ymode = log,
+  xmin = #4,
+  xmax = 60,
+  ymin = #4,
+  ymax = 60,
+  grid style={dashed, gray!30},
+  width=8cm,
+  height=8cm,
+]
+
+\addplot+[
+	only marks,
+%	scatter,
+	mark size=1pt,
+    black,
+]
+table[x=x, y=y]
+	{#3};
+
+\draw[-, gray!30] (-7,-7) -- (5,5);
+
+\end{axis}
+\end{tikzpicture}
+}
+
+% \scatterplot{feat}{hbmc}{feat-vs-hbmc}{0.002}
+
+% \scatterplot{Lazy SmallCheck}{hbmc}{lazy-vs-hbmc}{0.007}
+
+\input{cumuplot}
+
+% \begin{figure}\small
+% \begin{minipage}[b]{1\linewidth}
+% \begin{center}
+% \end{center}
+% \end{minipage}
+% \end{figure}
+
+% \scatterplot{intuit}{IntHistGC -b -c -c3}{intuit_vs_bcc3}{0.01}
+%
+% \scatterplot{intuit}{fCube}{intuit_vs_fcube}{0.01}
+
+% \begin{figure}\small
+% \begin{minipage}[b]{.5\linewidth}
+% \centering
+% \scatterplot{normal hbmc}{hbmc without call merge}{hbmc-wwo-merge}{0.01}
+% \end{minipage}
+% \begin{minipage}[b]{.5\linewidth}
+% \centering
+% \scatterplot{normal hbmc}{hbmc without call merge and without memo}{hbmc-wwo-merge-memo}{0.01}
+% \end{minipage}
+% \begin{minipage}[b]{.5\linewidth}
+% \centering
+% \scatterplot{normal hbmc}{hbmc without memo}{hbmc-wwo-memo}{0.01}
+% \end{minipage}
+% \begin{minipage}[b]{.5\linewidth}
+% \centering
+% \scatterplot{normal hbmc}{hbmc with conflict minimisation}{hbmc-wwo-confl}{0.01}
+% \end{minipage}
+% \end{figure}
+
+\newcommand{\scatterplots}[1]{
+\begin{figure}\small
+\begin{minipage}[b]{.5\linewidth}
+\centering
+\scatterplot{intuit}{IntHistGC -b -c -c3}{#1_intuit_vs_bcc3}{0.01}
+\end{minipage}
+\begin{minipage}[b]{.5\linewidth}
+\centering
+\scatterplot{intuit}{fCube}{#1_intuit_vs_fcube}{0.01}
+\end{minipage}
+\caption{#1}
+\end{figure}
+}
+
+\scatterplots{all}
+\scatterplots{koen}
+\scatterplots{gen}
+\scatterplots{iltp}
+
+\end{document}
+
