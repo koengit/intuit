@@ -70,9 +70,12 @@ main = do
                   return [ f | l <- lines s, let (f,',':_) = break (== ',') l ]
           else return []
 
-  let process []     = return ()
-      process (f:fs) | f `elem` existing = process fs
-      process (f:fs) =
+  let num_bad = 2
+
+  let process _ []     = return ()
+      process 0 fs   = sequence_ [ log fl Nothing | fl <- fs ]
+      process n (f:fs) | f `elem` existing = process n fs
+      process n (f:fs) =
         do putStrLn f
            let full_cmd = case cmd of
                  '_':_ -> (timelimit:(dir </> f):args)
@@ -84,8 +87,8 @@ main = do
            case exc of
              ExitSuccess | is_ok out
                -> do log f (Just t)
-                     process fs
-             _ -> do sequence_ [ log fl Nothing | fl <- f:fs ]
+                     process num_bad fs
+             _ -> do process (n-1) fs
 
-  mapM_ (\ g -> process g) (incrementalGroups files)
+  mapM_ (\ g -> process num_bad g) (incrementalGroups files)
 
