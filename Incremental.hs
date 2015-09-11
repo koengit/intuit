@@ -88,7 +88,8 @@ main = do
              ExitSuccess | is_ok out
                -> do log f (Just t)
                      process num_bad fs
-             _ -> do process (n-1) fs
+             _ -> do log f Nothing
+                     process (n-1) fs
 
   mapM_ (\ g -> process num_bad g) (incrementalGroups files)
 
