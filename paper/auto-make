@@ -1,0 +1,29 @@
+#!/bin/bash
+
+build()
+{
+  rm -f main.tex
+	if lhs2TeX main.lhs.tex > main.tex
+	then
+  	if echo q | pdflatex main.tex
+  	then
+	    bibtex main
+	    pdflatex main.tex	&& ( grep -s "Rerun to get" main.log && pdflatex main.tex || true )
+      return 0
+    else
+      return 1
+    fi
+  fi
+}
+
+while true; do
+  inotifywait main.lhs.tex main.bib --event close_write -q
+  sleep 1
+  notify-send "Making document..."
+  if build
+  then
+    notify-send "(success)"
+  else
+    notify-send "ERROR"
+  fi
+done
