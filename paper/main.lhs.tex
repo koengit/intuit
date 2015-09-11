@@ -1,0 +1,555 @@
+%---------------------------------------------------------------------------
+
+\documentclass{llncs}
+%include polycode.fmt
+
+\usepackage{float}
+\floatstyle{boxed}
+\restylefloat{figure}
+
+\begin{document}
+
+\title{ SAT modulo Intuitionistic Implications
+      }
+
+\author{ Koen Claessen
+       }
+
+\institute{ Chalmers University of Technology, Gothenburg, Sweden
+         \\ \email{koen@@chalmers.se}
+          }
+
+\maketitle
+
+%format phi = "\varphi"
+%format phi1
+%format phi2
+%format phi_i
+%format phi_n
+%format psi = "\psi"
+%format psi1
+%format psi_i
+%format psi_n
+%format bottom = "\bot"
+%format top    = "\top"
+
+%format rho = "\rho"
+%format rho1
+%format rho2
+%format a1
+%format a_i
+%format a_n
+%format b1
+%format b_j
+%format b_m
+%format p1
+%format p_n
+%format c1
+%format c_i
+%format d1
+%format d_j
+
+%format A1
+%format A_i
+%format A_n
+%format B1
+%format B_j
+%format B_m
+
+%format w1
+
+%format chi = "\chi"
+%format chi1
+%format chi2
+
+%format zeta = "\zeta"
+%format xi = "\xi"
+%format theta = "\vartheta"
+%format |- = "\vdash"
+%format /// = "\;\;\;"
+%format frac (x) (y) = "\frac{" x "}{" y "}"
+
+%format procedure = "{\bf procedure}"
+%format loop = "{\bf loop}"
+%format switch = "{\bf switch}"
+%format return = "{\bf return}"
+%format for = "{\bf for}"
+%format `union` = "\cup"
+%format and (x) = "\bigwedge" x
+%format andw (w) (x) = "\bigwedge_{" w "}" x
+%format <<= = "\subset"
+%format empty = "\emptyset"
+
+%format ->> = "\rightarrowtriangle"
+
+%---------------------------------------------------------------------------
+%- abstract
+
+\begin{abstract}
+
+We present a new method for solving problems in intuitionistic propositional
+logic, which involves the use of an incremental SAT-solver. The method scales
+to very large problems, and fits well into an SMT-based framework for interaction with other theories.
+
+\end{abstract}
+
+%---------------------------------------------------------------------------
+%- introduction
+
+\section{Introduction}
+
+\begin{figure}[t]
+\begin{center}
+$$
+\frac{|phi /// phi -> psi|}{|psi|}\;\;\mbox{(MP)}
+$$
+\begin{code}
+                      phi, zeta    |- phi                       (K)
+phi->   zeta-> psi,   phi -> zeta  |- phi -> psi                (S)
+
+                      phi && psi   |- phi                       (FST)
+                      phi && psi   |- psi                       (SND)
+                      phi, psi     |- phi && psi                (PAIR)
+                      
+                      phi          |- phi || psi                (INL)
+                      psi          |- phi || psi                (INR)
+        phi-> zeta,   psi -> zeta  |- (phi || psi) -> zeta ///  (CASE)
+        
+                      bottom       |- phi                       (BOT)
+                      phi          |- top                       (TOP)
+\end{code}
+\vspace{-0.7cm}\end{center}
+\label{fig:hilbert}
+\caption{A Hilbert-style proof system for intuitionistic propositional logic}
+\end{figure}
+
+Let us take a look at {\em intuitionistic propositional logic}. Its syntax looks just like classical propositional logic:
+\begin{code}
+phi  ::=  a | b | c | .. | q /// /// /// ///  -- atoms
+     |    phi1 && phi2                        -- conjunction
+     |    phi1 || phi2                        -- disjunction
+     |    phi1 -> phi2                        -- implication
+     |    bottom | top                        -- false / true
+\end{code}
+However, its definition of truth is considerably weaker than for classical logic. In Fig.\ \ref{fig:hilbert}, we show a Hilbert-style proof system for intuitionistic propositional logic. In the figure, we use |phi1, .., phi_n ||- psi| as a short-hand for |phi1 -> .. (phi_n -> psi)|. Only ``computationally valid'' derivations can be made in intuitionistic logic. For example, the classical law of the excluded middle |a |||| not a| does not hold. Here, we use |not a| as a short-hand for |a -> bottom|.
+
+In this paper, we are interested in building a modern, scalable, automated method for proving formulas in intuitionistic propositional logic. 
+By modern, we mean that we would like to make use of the enormous recent advances in automated theorem proving in the form of SAT and SMT techniques. We do not want to reinvent the wheel, rather we would like to investigate if there exists an SMT-like way of building an intuitionistic theorem prover {\em on top of} an existing SAT-solver. The hope is that this also results in a scalable method.
+
+It is perhaps surprising that we ask this question, because at first sight it does not seem natural to embed intuitionistic logic into classical logic; after all, we can derive much more in classical logic than intuitionistic logic.
+
+The key insight we make use of comes from Barr \cite{barr}. Given a set |S| of propostional clauses of the shape:
+\begin{code}
+(a1 && .. && a_n) -> (b1 || .. || b_m)
+\end{code}
+Here, |a_i| and |b_j| are propositional atoms. Now, the remarkable insight is this: The question of whether or not a given other clause of that same shape is derivable from the set |S| is oblivious to which logic we are in: classical or intuitionistic. The derivation power of these two logics on this subset is {\em equivalent}!
+
+In other words, if we have an intuitionistic logic problem that we are interested in solving, we would like to ``distill'' this problem into two parts: The first, and hopefully largest, part would be expressible using clauses of the above shape, and the second, hopefully tiny, part would consist of the part of the problem not expressible using clauses of the above shape. We can then use a standard SAT-solver to solve the first part, and an extra theory on the side to deal with the second part.
+
+Indeed, it turns out that clauses of the above shape are not quite enough to represent all intuitionistic formulas. We also need clauses of the following shape:
+\begin{code}
+(a->b)->c
+\end{code}
+Here, |a, b, c| are propositional atoms. We call these clauses {\em implication clauses}, and clauses of the first kind are called {\em flat clauses}.
+
+Finally, we need one more rule that tells us how flat clauses interact with implication clauses:
+$$
+\frac
+{|(p1 && .. && p_n && a) -> b /// /// /// (a->b)->c|}
+{|(p1 && .. && p_n) -> c|}|///(IMPL)|
+$$
+From one implication clause and one flat clause, we can generate a new flat clause. This rule, together with any complete proof system for classical logic applied to flat clauses, turns out to be a complete proof system for intuitionistic logic. The fact that no new implication clauses are generated during a proof is an extra bonus that alleviates automated proof search even more: Rule |(IMPL)| can be implemented as an SMT-style theory on top of a SAT-solver.
+
+Thus, we ended up constructing a simple, scalable, automated theorem prover for intuitionistic propositional logic based on a SAT-solver.
+
+To our knowledge, this is the first paper to take an SMT-based approach on top of a SAT-solver to intuitionistic logic. As we shall see, the implementation of the theory of intuitionistic implications turns out to be rather unconventional, because it has a recursive structure (calling the theorem prover itself!). But the overall design of the prover is quite simple; only one SAT-solver is needed to do all the reasoning, and no extra quantification is necessary. The result is a robust prover that performs very well on existing as well as new benchmarks.
+
+%---------------------------------------------------------------------------
+%- reduction to SAT
+
+\section{The procedure}
+
+In this section, we describe our procedure for proving (and disproving) formulas in intuitionistic propositional logic.
+
+\subsection{Canonical form}
+
+The first thing we do when trying to prove a formula |phi|, is to transform it into canonical form, by a process called {\em clausification}. A problem in canonical form is characterized by two sets of different kinds of clauses |R| and |X|, plus an atom |q|:
+\begin{code}
+( and R && and X ) -> q
+\end{code}
+Here, the set |R| only contains so-called {\em flat clauses} |rho|, which are of the following shape:
+\begin{code}
+rho  ::=  (a1 && .. && a_n) -> (b1 || .. || b_m)
+\end{code}
+In the above, |a_i| and |b_j| denote atoms. When |n=0|, the left-hand side is |top|; when |m=0|, the right-hand side is |bottom|.
+The set |X| only contains {\em implication clauses} |chi|, which have the following shape:
+\begin{code}
+chi  ::=  (a -> b) -> c
+\end{code}
+Here, |a, b, c| are atoms or the constants |bottom| or |top|.
+
+Any formula |phi| can be rewritten into a provability-equivalent formula in canonical form. As an example, consider the formula
+|a |||| not a|. Its canonical form is:
+\begin{code}
+((a -> q) && ((a -> bottom) -> q)) -> q
+\end{code}
+We can see that the canonical form consists of one flat clause |a -> q| and one implication clause |(a -> bottom) -> q|, and a final goal |q|.
+
+The procedure we use to rewrite any formula into canonical form is very similar to the Tseitin method for clausification of formulas in classical propositional logic \cite{tseitin}, but adapted to be sound for intuitionistic logic.
+
+We start by assuming that |phi| is of the shape |psi -> q|, for some atom |q|. If it is not, we can make it so by introducing a new atom |q| and using |(phi -> q) -> q| (where |psi| would thus be |phi -> q|) instead\footnote{provability-equivalent to |phi| because (1) |phi| implies the formula, and (2) if we take |q := phi|, the formula implies |phi|}.
+
+Next, we transform |psi| into the two sets of clauses |R| and |X|. We can
+do this using a number of transformation steps of the shape |phi ->> psi1, .., psi_n|, which transform an assumption |phi|
+into an equivalent set of assumptions |psi_i|. Most of these transformations assume that the formulas they work on are implications. However, the first transformation step can be used
+when a formula is not already an implication:
+\begin{code}
+                   phi /// /// ->> /// /// top -> phi
+\end{code}
+The next 3 transformations can be used when the left-hand or right-hand side of
+an implication does not have the right shape, as dictated by the clause being a flat clause or an implication clause:
+\begin{code}
+(phi ||  psi)  ->  a                   ->>      phi -> a, /// ///  psi -> a
+         a     ->  (phi && psi)   ///  ->> ///  a -> phi,          a -> psi
+         phi   ->  (psi -> zeta)       ->>      (phi && psi) -> zeta
+\end{code}
+In the above, |a| stands for either a regular atom, or one of
+the constants |bottom| or |top|. In order to have atoms appear at the right places, we can use the following 5 transformation steps:
+\begin{code}
+                   phi   ->  (.. || psi || ..)  ///  ->>                        phi   -> (.. || b || ..), ///  b -> psi
+(.. &&  phi    &&  ..)   ->  psi                     ->> /// (.. &&  b &&  ..)        -> psi,                  phi -> b
+        (zeta  ->  phi)  ->  psi                     ->> ///         (b     ->  phi)  -> psi,                  b -> zeta
+        (zeta  ->  phi)  ->  psi                     ->> ///         (zeta  ->  b)    -> psi,                  phi -> b
+        (zeta  ->  phi)  ->  psi                     ->> ///         (zeta  ->  phi)  -> b,                    b -> psi
+\end{code}
+In the above rules, |b| appearing on the right-hand side of a rule denotes a fresh atom not appearing anywhere else.
+
+The above rules are a complete set of rules to turn any formula |psi| into a set of flat clauses |R| and implication clauses |X|. The combined size of the clauses in |R| and |X| can be kept to at most twice the size of the size of the original formula |psi|, because we never copy whole formulas, and we only need to introduce a fresh atom |b| for any subformula at most once.
+
+\subsection{The SAT-solver}
+
+The proving procedure makes use of a standard off-the-shelf (classical) SAT-solver |s|, that supports the following operations:
+\begin{code}
+procedure newSolver();
+procedure addClause(s,rho);
+procedure satProve(s,A,q);
+\end{code}
+The procedure |newSolver| creates a new, unconstrained SAT-solver. The procedure |addClause| takes a SAT-solver |s| and a flat clause |rho|, and adds the clause |rho| as a constraint to |s|.
+
+The procedure |satProve| takes a SAT-solver |s|, a set of assumptions |A|, and a goal |q|. The assumptions |A| as well as the goal |q| are atoms. The procedure |satProve| tries to prove the goal |q|, from the assumptions |A| and all flat clauses that have been added so far. It produces one of two results:
+\begin{itemize}
+\item |No(M)|, if no proof could be found. Here, |M| is a model that is found by the SAT-solver represented as a set of true atoms. The model |M| is guaranteed to satisfy all added clauses, all assumptions, but it makes the goal |q| false. So, we know |A <<= M| and |q `notElem` M|.
+\item |Yes(A')|, if a proof could be found. Here, |A'| is the subset of the assumptions that were actually used in the proof of |q| from the clauses. So, we know that |A' <<= A|.
+\end{itemize}
+The set |A'| in the |Yes| answer can be produced by most modern SAT-solvers. Some solvers (such as MiniSAT \cite{minisat} which we use in our implementation) support this operation directly in their API. Other solvers support the construction of an unsatisfiable core, which can be used to get the same information.
+
+\subsection{Proving Procedure}
+
+The complete proving procedure (after transformation to canonical form) is pictured in ~25 lines of code in Figs.\ \ref{fig:top-level}--\ref{fig:check}.
+
+\begin{figure}[t]
+\begin{center}
+\begin{code}
+-- flat clauses |R|
+-- implication clauses |X|
+-- proof goal |q|
+
+procedure prove(R,X,q)
+  s = newSolver();
+  for rho `elem` R:
+    addClause(s, rho);
+  for chi `elem` X:
+    let (a->b)->c = chi
+    addClause(s, b->c);
+  return intuitProve(s, X, empty, q);
+\end{code}
+\vspace{-0.7cm}\end{center}
+\caption{Top-level procedure for intuitionistic proving}
+\label{fig:top-level}
+\end{figure}
+
+The top-level procedure |prove| is shown in Fig.\ \ref{fig:top-level}. Its arguments are a set of flat clauses |R|, a set of implication clauses |X|, and a goal |q|. It first creates a SAT-solver |s|, and adds all flat clauses |rho| to it. Furthermore, for each implication clause |(a->b)->c| from |X|, it adds the flat clause |b->c| (which is implied by the implication clause). Finally, it calls the main proving procedure |intuitProve|.
+
+\begin{figure}[t]
+\begin{center}
+\begin{code}
+-- SAT-solver |s|
+-- implication clauses |X|
+-- assumptions |A|
+-- proof goal |q|
+
+procedure intuitProve(s,X,A,q)
+  loop 
+    switch satProve(s,A,q)
+      case Yes(A'):
+        return Yes(A');
+      case No(M):
+        if intuitCheck(s,X,M) then
+          return No(M);
+\end{code}
+\vspace{-0.7cm}\end{center}
+\caption{Standard CEGAR-loop for intuitionistic proving}
+\label{fig:intuit}
+\end{figure}
+
+The main proving procedure |intuitProve| is shown in Fig.\ \ref{fig:intuit}. Its arguments are a SAT-solver, a set of implication clauses |X|, a set of assumptions |A|, and a goal |q|. The procedure has the standard shape of a CEGAR-loop. First, it tries to find a classical proof, using the SAT-solver only on the flat clauses. If this succeeds, we are done. If not, there is a classical model |M| which is going to be checked by the procedure |intuitCheck|, explained in the next subsection.
+
+If |intuitCheck| determines that the found model indeed corresponds to an intuitionistic model, it returns |True|, and we return the model as the answer. If |intuitCheck| finds the model inadequate, it will have generated an {\em extra} flat clause in the SAT-solver, and it returns |False|. In this case, we simply loop and try again.
+
+\subsection{Checking Procedure}
+
+When we find a classical model |M|, which is guaranteed to satisfy all flat clauses, we have to check whether or not it corresponds to an intuitionistic model. This means that, for each implication clause |(a->b)->c| in |X|, we have to check that if |a->b| is true under |M|, then |c| should also be true under |M|.
+
+In order to help us decide which implication clauses should be investigated, let us take a look at the following table, where we consider an implication clause |(a->b)->c|, and we have partitioned the $2^3$ possibilities for valuations of |a,b,c| into 4 separate cases.
+
+\begin{center}
+\begin{tabular}{c||ccc||c}
+ & a & b & c & |(a->b)->c| \\
+\hline
+(1) & - & - & $\;$ 1 $\;$ & yes \\
+(2) & - & $\;$ 1 $\;$ & 0 & no  \\
+(3) & $\;$ 1 $\;$ & 0 & 0 & yes \\
+(4) & 0 & 0 & 0 & ?   \\
+\end{tabular}
+\end{center}
+
+In case (1), the implication clause is fulfilled, since |c| is true, and so the whole implication is also true. Case (2) is definitely something that contradicts the implication clause; |b| is true and therefore also |a->b|, but |c| is not true. Fortunately, for each implication clause |(a->b)->c|, we have already added the flat clause |b->c| (see Fig.\ \ref{fig:top-level}) which excludes this case. In case (3), |a->b| is definitely not true, and so |c| does not have to be true either.
+
+The only case that is left that we have to check is case (4). Here, |a->b| is classically true, but intuitionistically, we do not know whether or not it is true, and therefore we do not know whether or not |c| should be true. 
+
+Thus, what we have to do is check whether or not we can prove |a->b| using the true atoms from the current model |M|. If we can, then surely the current model was wrong since |c| was not true. If we cannot not, the current model fulfills the implication clause also.
+
+\begin{figure}[t]
+\begin{center}
+\begin{code}
+-- SAT-solver |s|
+-- implication clauses |X|
+-- model |M|
+
+procedure intuitCheck(s,X,M)
+  for chi `elem` X:
+    let (a->b)->c = chi
+    if a,b,c `notElem` M then
+      switch intuitProve(s,X-{chi},M`union`{a},b)
+        case Yes(A'):
+          addClause(s, (and(A'-{a}))->c)
+          return False;
+  return True;
+\end{code}
+\vspace{-0.7cm}\end{center}
+\caption{Checking whether or not a SAT-model is also an intuitionistic model}
+\label{fig:check}
+\end{figure}
+
+As we can see in Fig.\ \ref{fig:check}, the way we check whether or not |a->b| is provable under the current model, is to call |intuitProve| recursively, using |M`union`{a}| as assumptions, and |b| as the proof goal. If the answer is |No(-)|, everything is fine. If the answer is |Yes(A')|, we generate a new flat clause, using the following proof rule |(IMPL)|:
+$$
+\frac
+{|(p1 && .. && p_n && a) -> b /// /// /// (a->b)->c|}
+{|(p1 && .. && p_n) -> c|}|///(IMPL)|
+$$
+When the answer is |Yes(A')|, it means that we have proved that |and(A')->b| (left-hand premise) and using the implication clause (right-hand premise), we can conclude |and(A'-{a})->c| (conclusion), which is the flat clause we then add to the SAT-solver.
+
+We would like to note here that the efficiency of our algorithm is mainly brought by reducing the assumptions |M`union`{a}| from the question to the assumptions |A'| in the answer. It is the actually needed assumptions |A'| that are used when constructing the new flat clause, not the originally given assumptions |M`union`{a}|!
+
+Rule |(IMPL)| allows us to create a new flat clause from an existing flat clause and an implication clause. It is the only extra proof rule we use (apart from classical resolution on flat clauses), and thus the total number of implication clauses during proof search remains constant. It is easy to see that |(IMPL)| is sound once one realizes that the left-hand side premise is equivalent to |(p1 && .. && p_n) -> (a -> b)|; then |(IMPL)| is simply an instance of the cut rule:
+$$
+\frac
+{|phi -> psi /// /// psi -> zeta|}
+{|phi -> zeta|}|///(CUT)|
+$$
+The three procedures |prove, intuitProve, intuitCheck| together completely make up the proving algorithm.
+
+\subsection{Correctness}
+
+Correctness of the algorithm consists of three parts: Termination (the algorithm terminates on all inputs), soundness (when the algorithm claims to have proven a formula, there indeed is a proof), and completeness (when the algorithm claims the unprovability of a formula, it indeed is not provable).
+
+~\\ \noindent{\bf Termination}$\;$ There are two possible causes of non-termination: The loop in |intuitProve|, and the mutual recursion between |intuitProve| and |intuitCheck|.
+
+The loop in |intuitProve| terminates, because in each loop iteration, a clause is added to the SAT-solver that is false in the model |M| that made all previously added clauses true. Thus, each loop iteration strictly reduces the number of models that satisfy all clauses in the SAT-solver. Eventually, the loop must terminate.
+
+The mutual recursion between |intuitProve| and |intuitCheck| terminates because in each recursive call to |intuitProve|, the set |X| shrinks by one element |chi|.
+
+~\\ \noindent{\bf Soundness}$\;$ If the algorithm terminates with a |Yes(-)| answer, the SAT-solver will have proved the goal from the flat clauses and the assumptions. Soundness is thus argued based on two arguments: (1) classical inference may be used to intuitionistically conclude flat clauses from sets of flat clauses, and (2) all flat clauses in the SAT-solver are implied by the original clauses |R| and |X|.
+
+As to (1), this observation was already made by Barr \cite{barr}, but we briefly restate the argument here. Any classical inference of a flat clause from a set of flat clauses can be simulated by the resolution rule:
+$$
+\frac
+{|phi -> (psi |||| a) /// ///
+  (a && theta) -> zeta|}
+{|(phi && theta) -> (psi |||| zeta)|}|///(RES)|
+$$
+The resolution rule |(RES)| as stated above also holds intuitionistically. Thus, any classical proof deriving a flat clause from a set of flat clauses also admits an intuitionistic proof.
+
+As to (2), all flat clauses in the SAT-solver either directly come from the set |R|, or they are derived using the rule |(IMPL)|, which we have already argued is sound.
+
+~\\ \noindent{\bf Completeness}$\;$ We show that when the algorithm terminates with a |No(M)| answer, there exists an intuitionistic Kripke model with a ``starting world´´ $w_0$ that satisfies all flat clauses, all implication clauses, and in which the proof goal |q| is false. We construct this Kripke model below.
+
+Consider the last top-level call to |intuitCheck|, the call that validated the last model that was found. It executed many (recursive) calls to |intuitCheck|, each of them returning |True|. Now, let each of these calls be a unique world |w| in the set of worlds |W|. The valuation |M(w)| associated with each world |w| is the model |M| with which the corresponding call of |intuitCheck| was given. The world |w_0| is associated with the top-level call to |intuitCheck|.
+
+Define the call-relation |C| as follows: |w1 C w2| if and only if the call |w1| made the call |w2|. The accessibility relation |<=| on |W| is defined to be the {\em reflexive, transitive} closure of |C|. The relation |<=| satisfies the {\em persistency condition}: each call to |intuitCheck| makes the set of true atoms larger by adding the atom |a| to |M| in the calls to |intuitProve|.
+
+All flat clauses in |R| are satisfied by the valuations of all |w|, because all of these are models of the SAT-solver |s|, which guarantees that all flat clauses are made true by all models. This also means that all flat clauses are true in all |w|.
+
+The proof goal |q| is false in |w_0|, because the top-level call to |intuitProve| generated a counter-model to |q|.
+
+All implication clauses in |X| are true in |w_0|. To see this, consider an implication clause |chi = (a->b)->c| from |X| and a world |w| in which |a->b| is true, but |c| is false. If |c| is false in |w|, then so is |b|, because we have the flat clause |b->c| that we added to |s|. If |b| is false in |w|, then so is |a|, because |a->b| is true in |w| by our assumption. Every world is reachable by |C|-steps from |w_0|, and thus so is |w|. By persistency, |a,b,c| must be false in {\em every} world on the |C|-path from |w_0| to |w|. This means that the implication clause |chi| is still part of the set of implication clauses that belonged to the |intuitCheck|-call represented by |w|. This means that a call to |intuitProve| will be made from |w| in which |a| will be added to the assumptions, and with |b| as the goal, and which furthermore returns with |No(-)|. This contradicts our assumption that |a->b| is true in |w|. So, all original implication clauses are true in |w_0|.
+
+%---------------------------------------------------------------------------
+%- optimizations
+
+\section{Optimizations}
+
+In this section, we discuss a number of possible optimizations that can be made to the basic algorithm, and their perceived effect on efficiency.
+
+~\\ \noindent{\bf Keep checking after finding an offending implication clause}$\;$ The procedure |intuitCheck| only generates one new clause when something is wrong with a found model. Typically, a CEGAR-loop may benefit from generating multiple clauses that indicate what is wrong with a proposed model. The reason is that if we find $k$ unrelated reasons for why a found model is wrong, we may save time by not having to find $k$ different models, each triggering that reason.
+
+\begin{figure}[t]
+\begin{center}
+\begin{code}
+-- SAT-solver |s|
+-- implication clauses |X|
+-- model |M|
+
+procedure intuitCheck2(s,X,M)
+  okay = True;
+  for chi `elem` X:
+    let (a->b)->c = chi
+    if a,b,c `notElem` M then
+      switch intuitProve(s,X-{chi},M`union`{a},b)
+        case Yes(A'):
+          satAddClause(s, (and(A'-{a}))->c)
+          okay = False;
+  return okay;
+\end{code}
+\vspace{-0.7cm}\end{center}
+\caption{Checking whether or not a SAT-model is also an intuitionistic model}
+\label{fig:check2}
+\end{figure}
+
+In Fig.\ \ref{fig:check2}, we present a slightly adapted version of |intuitCheck| that checks for all implication clauses whether or not they are content with the currently found model, instead of aborting after finding the first offending implication clause.
+
+We implemented this adapted method, and compared it experimentally against the simple first version. The change made some running times of the benchmarks worse, others better. All running times remained in the same order of magnitude. There were slightly more cases in which the running time was improved, so we decided to keep this variant.
+
+Conclusion: The balance in favor of this optimization was not completely convincing, and it may change with more different benchmarks.
+
+~\\ \noindent{\bf Minimize the number of offending implication clauses}$\;$ It is obvious that the running time of the algorithm is affected mostly by the number of implication clauses that need to be checked. So, instead of just finding any model |M|, we considered adding an optimization phase that tried to minimize the number of implication clauses that needed to be investigated (i.e. the number of implication clauses where |a=b=c=0|).
+
+The experimental results showed that this method was worse in every case where a difference could be observed. The reason was that the minimization methods we tried were slowing things down very much, and the final effect on the number of implications that had to be checked was not as great as we hoped for. We tried global minimization methods (minimizing the number of offending implication clauses) as well as local optimization methods (using subset-minimization).
+
+Conclusion: We are still interested in minimization, but we need to (1) find better suited minimization methods, and (2) more suitable benchmarks where this would make an actual difference.
+ 
+~\\ \noindent{\bf Reuse of already found models}$\;$ From the correctness proof, it becomes clear that a Kripke model can be constructed from a run of the algorithm that results in a |No(-)| answer. Currently, this Kripke model always has a tree-shape. Some trees can be compacted into directed acyclic graphs (DAGs), enabling a possible exponential speed-up.
+
+The algorithm can be adapted to keep a table of already found and checked models, which grows during calls of |intuitCheck|. Whenever we call |intuitProve|, we can consult the table of models to see if we can immediately see that the answer is going to be |No(-)|.
+
+We have implemented this optimization, and have evaluated it on some formulas, with promising results. However, we have not had enough time to properly evaluate this optimization for this version of the paper, but we are confident we can do this before we prepare the final version of this paper.
+
+%---------------------------------------------------------------------------
+%- experimental results
+
+\section{Related Work and Experimental Results}
+
+In this section, we compare our method against other, existing methods for automated proving of intuitionistic propositional formulas.
+
+The main competitors for automated proof for intuitionistic propositional logic are IntHistGC \cite{rajeev} and fCube \cite{fcube}. Both are provers that perform a backtracking search directly on a proof calculus, and are therefore rather different from the approach taken here. IntHistGC implements clever backtracking optimizations that avoid recomputations in many cases. fCube implements several pruning techniques on a tableau-based calculus.
+
+We have used three different benchmark suites to compare the provers experimentally.
+
+\begin{itemize}
+\item ILTP \cite{iltp}, these are 12 problems parametrized by a size. This is a quite old set of benchmarks now, from 2006.
+\item IntHistGC benchmarks, these are 6 problems parametrized by a natural number. These are newer, and carefully constructed sequences of formulas that separate classical and intuitionistic logic.
+\item API solving, these are 10 problems where a rather large API (set of functions with types) is given, and the problem is to construct a function of a given type. Each problem has variants with API sizes that vary in size from a dozen to a few thousand functions. These problems were constructed by the author in an attempt to create practically useful problems.
+\end{itemize}
+
+All of the above contain benchmarks that are provable as well as not provable. All benchmarks, as well as the implementation of the tool in this paper, are available from {\sf github.com/koengit/intuit}.
+
+~\\ \noindent{\bf Results}$\;$ Surprisingly, the method in this paper can solve most problems within 1 second, and {\bf almost all problems within 5 seconds}. The only two problems that do not fall into this category are:
+
+\begin{itemize}
+\item The problem {\sf nishimura2} from the IntHistGC benchmarks cannot be solved for size 35 within a few minutes. But neither can IntHistGC and fCube.
+
+\item The problem {\sf SYJ202} from the ILTP suite cannot be solved for sizes more than 10 within a few minutes. However, IntHistGC and fCube get stuck much earlier.
+\end{itemize}
+
+The following problems can be solved by the method in this paper but are out of reach for both of the other methods:
+
+\begin{itemize}
+\item The problems {\sf portia}, and {\sf negportia2} from the IntHistGC benchmarks can be solved for sizes up to 300 within 1 second, but the other provers get stuck on sizes below 50.
+
+\item The problem {\sf nishimura} from the IntHistGC benchmarks can be solved for sizes up to 30, but the other provers get stuck on much smaller sizes.
+
+\item The problem {\sf SYJ208} from the ILTP benchmark suite can be solved for all sizes up to 20. However, IntHistGC and fCube get stuck much earlier.
+\end{itemize}
+
+Many problems can be solved by either IntHistGC or fCube, but not both. Whenever one of them can solve it, the method in this paper can also solve it within similar or better times.
+
+These results may seem impressive, but as a note to the reader, the set of available standard benchmarks is way too small to draw any significant conclusion! Also, the prover in this paper was developed without access to any of these benchmarks on beforehand.
+
+%---------------------------------------------------------------------------
+%- future work
+
+\section{Future Work}
+
+This section describes some ideas we have for future work.
+
+The main reason for initiating the work described in this paper was to understand how to build a scalable prover for a logic like intuitionistic propositional logic. However, the number of practical applications of intuitionistic propositional logic is limited. We believe that our insights can benefit two other kinds of logic that have more applications: classical modal logics and intuitionistic first-order logic.
+
+\subsection{Generalization to modal logic}
+
+%format box = "\Box\!"
+%format dia = "\lozenge\!\!"
+We are currently building a theorem prover for classical modal logic based on the same ideas as presented in this paper. When we want to prove a formula |phi|, we generate a fresh literal |q|, and generate constraints that represent the formula |box(phi -> q)|. The insight is that, in order to do so, it is enough to consider constraints of one of the following three shapes:
+\begin{enumerate}
+\item |box p|, for a propositional logic formula |p|,
+\item |box (a -> box b)|, for propositional logic literals |a| and |b|, and
+\item |box (a -> dia b)|, for propositional logic literals |a| and |b|.
+\end{enumerate}
+Just like the prover we have described in this paper, the theorem prover for modal
+logic uses one SAT-solver that stores all constraints that hold in all worlds, which are the formulas |p| above. If |q| can be proven from these, the proof is done. Otherwise, we get a counter-model which satisfies all |p| but not |q|, and we have to investigate whether or not constraints of type 2. and 3. are fulfilled. If the answer is yes, we have found a counter model to |phi|, otherwise, more constraints of type 1. will be generated and we start over.
+
+\subsection{Generalization to intuitionistic first-order logic}
+
+We also have started to look at building an automated prover for intuitionistic first-order logic. There are two strands of work here.
+
+The first basically augments a standard SMT-solver with implication clauses. Most SMT-solvers have a heuristic for instantiating universal quantifiers. After that, the implication clauses are dealt with in the same way as in this paper.
+
+However, this can only deal with a fragment of first-order logic. To cope with the full logic,
+we analyze intuitionistic first-order logic and come to the conclusion that we only have to support ``clauses'' of the following three shapes:
+%format forall = "\forall"
+%format xx = "\vec{x}"
+%format yy = "\vec{y}"
+%format . = "."
+\begin{enumerate}
+\item |forall xx . (A1 && .. && A_n) -> (B1 |||| .. |||| B_m)|, also called flat clauses,
+\item |forall xx . (A->B)->C|, also called implication clauses, and
+\item |forall xx . (forall yy . A)->B|, called quantification clauses.
+\end{enumerate}
+The idea is to let a model-generating first-order prover (SMT-solver) take care of the flat clauses. Every so often, we investigate the (partial) models that are generated, and use the implication clauses and the quantification clauses to generate more flat clauses, and we continue.
+
+The main difficulties here are: (1) first-order logic is only semi-decidable, so we cannot expect to get either a model or a proof from the set of flat clauses, which means that we have to settle for a heuristic method based on partial models, and (2) most representations of partial models use some kind of ground model which makes it hard to deal with the universally quantified variables |xx| in the implication clauses and quantification clauses.
+
+%---------------------------------------------------------------------------
+%- conclusions
+
+\section{Conclusions}
+
+We presented a new method for automated proving and disproving of formulas in intuitionistic propositional logic. The method makes use of a single instance of an incremental SAT-solver, and implements an SMT-style theory of intuitionistic implication clauses on top of it. The result is a robust theorem prover that can easily tackle most existing benchmarks.
+
+Intuitionistic propositional logic seems to have limited practical applications, as indicated by the (un)availability of standard benchmark sets. Our hope is that the method described in this paper can give rise to scalable and robust methods for related logics with more clear practical applications, such as various modal logics and intuitionistic first-order logic.
+
+%---------------------------------------------------------------------------
+%- acks
+
+\section*{Acknowledgments}
+
+We thank Thierry Coquand and Rajeev Gore for feedback on earlier versions of
+this work.
+
+%---------------------------------------------------------------------------
+%- references
+
+\bibliographystyle{plain}
+\bibliography{main}
+
+\end{document}
+
