@@ -1,5 +1,5 @@
 ulimit -Sv 7000000
-TIMEOUT=5
+TIMEOUT=300
 ghc --make Incremental.hs -o Incremental || exit
 ./Incremental 'Valid|CounterSatisfiable' Benchmarks/ $TIMEOUT intuit
 ./Incremental provable Benchmarks-fcube/ $TIMEOUT ~/build/fCube-11.1/fCube/fCube.bash
