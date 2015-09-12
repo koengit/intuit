@@ -1,7 +1,7 @@
 #!/bin/bash
 
 prep() {
-    sort $1 | sed 's/.*,//' | sed 's/-/60/'
+    sort $1 | sed 's/.*,//' | sed 's/-/300/'
 }
 
 echo x y

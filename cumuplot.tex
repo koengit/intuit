@@ -1,18 +1,19 @@
 
 \newcommand{\cumuplot}[1]{
 \begin{figure}\small
+\centering
 \begin{tikzpicture}
 \begin{axis}[
   ylabel=solved problems (cumulative),
   xlabel={after time [s]},
   axis lines=left,
   grid = major,
-  xmin = -3,
-  xmax = 0.6989, % 1.779,
-  ymin = 0,
+  xmin = -1,
+  xmax = 2.47712, % 0.6989, % 1.779,
+%  ymin = 0,
 %  ymax = 900,
-  xtick = {-1,-0.522878,0,0.522878,1,1.522878},
-  xticklabels = {0.1,0.3,1,3,10,30},
+  xtick =       {-2  ,-1.477121,-1 ,-0.477121,0,0.477121,1 ,1.477121,2},
+  xticklabels = {0.01,0.03     ,0.1,0.3      ,1,3       ,10,30      ,100},
   grid style={dashed, gray!40},
   width=12cm,
   height=8cm,
@@ -24,12 +25,12 @@
 ]
 \addplot [black,mark=o,      mark size=1.8pt,hist={cumulative,bins=100,handler/.style={only marks}}] table [y index=0] {#1_intuit};
 \addplot [red  ,mark=x,      mark size=1.8pt,hist={cumulative,bins=100,handler/.style={only marks}}] table [y index=0] {#1_inthistgc_bcc3};
-% \addplot [blue ,mark=diamond,mark size=1.8pt,hist={cumulative,bins=100,handler/.style={only marks}}] table [y index=0] {#1_inthistgc_bc2c3};
-\addplot [brown,mark=square, mark size=1.8pt,hist={cumulative,bins=100,handler/.style={only marks}}] table [y index=0] {#1_fcube};
-\legend{intuit,IntHistGC bcc3,fCube}
+% \addplot [brown ,mark=diamond,mark size=1.8pt,hist={cumulative,bins=100,handler/.style={only marks}}] table [y index=0] {#1_inthistgc_bc2c3};
+\addplot [blue,mark=square, mark size=1.8pt,hist={cumulative,bins=100,handler/.style={only marks}}] table [y index=0] {#1_fcube};
+\legend{intuit,IntHistGC -b -c -c3,fCube}
 \end{axis}
 \end{tikzpicture}\hfill
-\caption{#1}
+\caption{#1 {\footnotesize(note that y axis does not start at zero)}}
 \end{figure}
 }
 

@@ -17,9 +17,9 @@
   xmode = log,
   ymode = log,
   xmin = #4,
-  xmax = 60,
+  xmax = 300,
   ymin = #4,
-  ymax = 60,
+  ymax = 300,
   grid style={dashed, gray!30},
   width=8cm,
   height=8cm,
@@ -40,41 +40,15 @@ table[x=x, y=y]
 \end{tikzpicture}
 }
 
-% \scatterplot{feat}{hbmc}{feat-vs-hbmc}{0.002}
-
-% \scatterplot{Lazy SmallCheck}{hbmc}{lazy-vs-hbmc}{0.007}
+\begin{figure}
+\centering
+\input{table}
+\caption{
+All files where not all provers failed and not all provers succeeded.
+}
+\end{figure}
 
 \input{cumuplot}
-
-% \begin{figure}\small
-% \begin{minipage}[b]{1\linewidth}
-% \begin{center}
-% \end{center}
-% \end{minipage}
-% \end{figure}
-
-% \scatterplot{intuit}{IntHistGC -b -c -c3}{intuit_vs_bcc3}{0.01}
-%
-% \scatterplot{intuit}{fCube}{intuit_vs_fcube}{0.01}
-
-% \begin{figure}\small
-% \begin{minipage}[b]{.5\linewidth}
-% \centering
-% \scatterplot{normal hbmc}{hbmc without call merge}{hbmc-wwo-merge}{0.01}
-% \end{minipage}
-% \begin{minipage}[b]{.5\linewidth}
-% \centering
-% \scatterplot{normal hbmc}{hbmc without call merge and without memo}{hbmc-wwo-merge-memo}{0.01}
-% \end{minipage}
-% \begin{minipage}[b]{.5\linewidth}
-% \centering
-% \scatterplot{normal hbmc}{hbmc without memo}{hbmc-wwo-memo}{0.01}
-% \end{minipage}
-% \begin{minipage}[b]{.5\linewidth}
-% \centering
-% \scatterplot{normal hbmc}{hbmc with conflict minimisation}{hbmc-wwo-confl}{0.01}
-% \end{minipage}
-% \end{figure}
 
 \newcommand{\scatterplots}[1]{
 \begin{figure}\small
