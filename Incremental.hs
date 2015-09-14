@@ -70,7 +70,7 @@ main = do
                   return [ f | l <- lines s, let (f,',':_) = break (== ',') l ]
           else return []
 
-  let num_bad = 2
+  let num_bad = 4
 
   let process _ []     = return ()
       process 0 fs   = sequence_ [ log fl Nothing | fl <- fs ]

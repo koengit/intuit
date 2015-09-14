@@ -1,3 +1,8 @@
+# This Makefile is only used to convert the benchmark suite
+# into other input formats.
+# To install intuit, use `cabal install` instead.
+#
+# You may need to create directories before running the Makefile, with:
 # mkdir -p Benchmarks-{fcube,inthistgc}
 
 files = $(wildcard Benchmarks/*p)
