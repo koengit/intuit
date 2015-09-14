@@ -1,0 +1,65 @@
+
+\newcommand{\scatterplot}[6]{
+
+\begin{tikzpicture}
+\begin{axis}[
+  xlabel={#1},
+  ylabel={#2},
+  enlargelimits=false,
+  axis lines=left,
+  grid = major,
+  xmode = log,
+  ymode = log,
+  xmin = #4,
+  xmax = 300,
+  ymin = #4,
+  ymax = 300,
+  grid style={dashed, gray!30},
+  width=6cm,
+  height=6cm,
+  scatter/classes={%
+    Validkoen={mark=*,black,mark size=#5pt},%
+    Validgen={mark=*,black,mark size=#5pt},%
+    Validiltp={mark=*,black,mark size=#5pt},%
+    CounterSatisfiablekoen={mark=*,black,mark size=#6pt},%
+    CounterSatisfiablegen={mark=*,black,mark size=#6pt},%
+    CounterSatisfiableiltp={mark=*,black,mark size=#6pt},%
+    Openkoen={mark=*,draw=black,mark size=0.7pt},%
+    Opengen={mark=*,draw=black,mark size=0.7pt},%
+    Openiltp={mark=*,draw=black,mark size=0.7pt}},
+]
+
+\addplot[
+	only marks,
+	scatter,
+	mark size=1.6pt,
+%    nodes near coords,
+    scatter src=explicit symbolic,
+%    point meta=explicit symbolic,
+%    black,
+]
+table[x=x, y=y, meta=label]
+	{#3};
+
+\draw[-, gray!30] (-7,-7) -- (5,5);
+
+\end{axis}
+\end{tikzpicture}
+}
+
+\newcommand{\scatterplots}[1]{
+\begin{figure}[h!]\small
+\begin{minipage}[b]{.5\linewidth}
+\centering
+\scatterplot{intuit ({\tt Valid})}{IntHistGC -b -c -c3}{#1_intuit_vs_bcc3}{0.01}{0.7}{0}
+\scatterplot{intuit ({\tt CoSat})}{IntHistGC -b -c -c3}{#1_intuit_vs_bcc3}{0.01}{0}{0.7}
+\end{minipage}
+\begin{minipage}[b]{.5\linewidth}
+\centering
+\scatterplot{intuit ({\tt Valid})}{fCube}{#1_intuit_vs_fcube}{0.01}{0.7}{0}
+\scatterplot{intuit ({\tt CoSat})}{fCube}{#1_intuit_vs_fcube}{0.01}{0}{0.7}
+\end{minipage}
+\caption{Comparison. Runtimes in seconds, timeout was 300s.\label{scatterplots}}
+\end{figure}
+}
+

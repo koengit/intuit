@@ -3,6 +3,11 @@
 \documentclass{llncs}
 %include polycode.fmt
 
+\usepackage{tikz}
+\usepackage{pgfplots}
+\usepackage{pgfplotstable}
+\usepackage{dcolumn}
+
 \usepackage{float}
 \floatstyle{boxed}
 \restylefloat{figure}
@@ -12,11 +17,11 @@
 \title{ SAT modulo Intuitionistic Implications
       }
 
-\author{ Koen Claessen
+\author{ Koen Claessen, Dan Ros{\'e}n
        }
 
 \institute{ Chalmers University of Technology, Gothenburg, Sweden
-         \\ \email{koen@@chalmers.se}
+         \\ \email{\{koen,danr\}@@chalmers.se}
           }
 
 \maketitle
@@ -112,11 +117,11 @@ phi->   zeta-> psi,   phi -> zeta  |- phi -> psi                (S)
                       phi && psi   |- phi                       (FST)
                       phi && psi   |- psi                       (SND)
                       phi, psi     |- phi && psi                (PAIR)
-                      
+
                       phi          |- phi || psi                (INL)
                       psi          |- phi || psi                (INR)
         phi-> zeta,   psi -> zeta  |- (phi || psi) -> zeta ///  (CASE)
-        
+
                       bottom       |- phi                       (BOT)
                       phi          |- top                       (TOP)
 \end{code}
@@ -135,7 +140,7 @@ phi  ::=  a | b | c | .. | q /// /// /// ///  -- atoms
 \end{code}
 However, its definition of truth is considerably weaker than for classical logic. In Fig.\ \ref{fig:hilbert}, we show a Hilbert-style proof system for intuitionistic propositional logic. In the figure, we use |phi1, .., phi_n ||- psi| as a short-hand for |phi1 -> .. (phi_n -> psi)|. Only ``computationally valid'' derivations can be made in intuitionistic logic. For example, the classical law of the excluded middle |a |||| not a| does not hold. Here, we use |not a| as a short-hand for |a -> bottom|.
 
-In this paper, we are interested in building a modern, scalable, automated method for proving formulas in intuitionistic propositional logic. 
+In this paper, we are interested in building a modern, scalable, automated method for proving formulas in intuitionistic propositional logic.
 By modern, we mean that we would like to make use of the enormous recent advances in automated theorem proving in the form of SAT and SMT techniques. We do not want to reinvent the wheel, rather we would like to investigate if there exists an SMT-like way of building an intuitionistic theorem prover {\em on top of} an existing SAT-solver. The hope is that this also results in a scalable method.
 
 It is perhaps surprising that we ask this question, because at first sight it does not seem natural to embed intuitionistic logic into classical logic; after all, we can derive much more in classical logic than intuitionistic logic.
@@ -281,7 +286,7 @@ The top-level procedure |prove| is shown in Fig.\ \ref{fig:top-level}. Its argum
 -- proof goal |q|
 
 procedure intuitProve(s,X,A,q)
-  loop 
+  loop
     switch satProve(s,A,q)
       case Yes(A'):
         return Yes(A');
@@ -317,7 +322,7 @@ In order to help us decide which implication clauses should be investigated, let
 
 In case (1), the implication clause is fulfilled, since |c| is true, and so the whole implication is also true. Case (2) is definitely something that contradicts the implication clause; |b| is true and therefore also |a->b|, but |c| is not true. Fortunately, for each implication clause |(a->b)->c|, we have already added the flat clause |b->c| (see Fig.\ \ref{fig:top-level}) which excludes this case. In case (3), |a->b| is definitely not true, and so |c| does not have to be true either.
 
-The only case that is left that we have to check is case (4). Here, |a->b| is classically true, but intuitionistically, we do not know whether or not it is true, and therefore we do not know whether or not |c| should be true. 
+The only case that is left that we have to check is case (4). Here, |a->b| is classically true, but intuitionistically, we do not know whether or not it is true, and therefore we do not know whether or not |c| should be true.
 
 Thus, what we have to do is check whether or not we can prove |a->b| using the true atoms from the current model |M|. If we can, then surely the current model was wrong since |c| was not true. If we cannot not, the current model fulfills the implication clause also.
 
@@ -439,7 +444,7 @@ Conclusion: The balance in favor of this optimization was not completely convinc
 The experimental results showed that this method was worse in every case where a difference could be observed. The reason was that the minimization methods we tried were slowing things down very much, and the final effect on the number of implications that had to be checked was not as great as we hoped for. We tried global minimization methods (minimizing the number of offending implication clauses) as well as local optimization methods (using subset-minimization).
 
 Conclusion: We are still interested in minimization, but we need to (1) find better suited minimization methods, and (2) more suitable benchmarks where this would make an actual difference.
- 
+
 ~\\ \noindent{\bf Reuse of already found models}$\;$ From the correctness proof, it becomes clear that a Kripke model can be constructed from a run of the algorithm that results in a |No(-)| answer. Currently, this Kripke model always has a tree-shape. Some trees can be compacted into directed acyclic graphs (DAGs), enabling a possible exponential speed-up.
 
 The algorithm can be adapted to keep a table of already found and checked models, which grows during calls of |intuitCheck|. Whenever we call |intuitProve|, we can consult the table of models to see if we can immediately see that the answer is going to be |No(-)|.
@@ -451,6 +456,7 @@ We have implemented this optimization, but have not thoroughly evaluated it. Thi
 
 \section{Related Work and Experimental Results}
 
+
 In this section, we compare our method against other, existing methods for automated proving of intuitionistic propositional formulas.
 
 The main competitors for automated proof for intuitionistic propositional logic are IntHistGC \cite{rajeev} and fCube \cite{fcube}. Both are provers that perform a backtracking search directly on a proof calculus, and are therefore rather different from the approach taken here. IntHistGC implements clever backtracking optimizations that avoid recomputations in many cases. fCube implements several pruning techniques on a tableau-based calculus.
@@ -458,34 +464,78 @@ The main competitors for automated proof for intuitionistic propositional logic 
 We have used three different benchmark suites to compare the provers experimentally.
 
 \begin{itemize}
-\item ILTP \cite{iltp}, these are 12 problems parametrized by a size. This is a quite old set of benchmarks now, from 2006.
 \item IntHistGC benchmarks, these are 6 problems parametrized by a natural number. These are newer, and carefully constructed sequences of formulas that separate classical and intuitionistic logic.
-\item API solving, these are 10 problems where a rather large API (set of functions with types) is given, and the problem is to construct a function of a given type. Each problem has variants with API sizes that vary in size from a dozen to a few thousand functions. These problems were constructed by the author in an attempt to create practically useful problems.
+\item ILTP \cite{iltp}, these are 12 problems parametrized by a size. This is a quite old set of benchmarks now, from 2006.
+We used the extended version that have larger sizes: instead of max size 20, our version had two problems to size 38 and the rest to size 50. This version was used in the evaluation of IntHistGC.
+\item API solving, these are 10 problems where a rather large API (set of functions with types) is given, and the problem is to construct a function of a given type. Each problem has variants with API sizes that vary in size from a dozen to a few thousand functions. These problems were constructed by the authors in an attempt to create practically useful problems.
 \end{itemize}
+
+The number of benchmarks are 1200 and we used a 300 second timeout. This was run on a 2013 laptop computer
+with an Intel Xeon E3-1200 v2 processor and the processer were allowed 7 GB of RAM.
+IntHistGC was run with its best flags ({\tt -b -c -c3}). We used the latest versions of the other tools: fCube version 11.1
+and IntHistGC 1.29.
 
 All of the above contain benchmarks that are provable as well as not provable. All benchmarks, as well as the implementation of the tool in this paper, are available from {\sf github.com/koengit/intuit}.
 
-~\\ \noindent{\bf Results}$\;$ Surprisingly, the method in this paper can solve most problems within 1 second, and {\bf almost all problems within 5 seconds}. The only two problems that do not fall into this category are:
+~\\ \noindent{\bf Results}$\;$
 
-\begin{itemize}
-\item The problem {\sf nishimura2} from the IntHistGC benchmarks cannot be solved for size 35 within a few minutes. But neither can IntHistGC and fCube.
+Of the 1200 benchmarks in the test suite, our tool {\tt intuit} proves all but 37 benchmarks.
+IntHistGC proved all but 39 benchmarks and fCube all but 38. Interestingly, the successes
+are not contained in each other. All benchmarks from IntHistGC's and our test suite were proved
+by some prover. In ILTP, only the pidgeon-hole problems {\tt SYJ202} were not solved by some prover:
+and this only for sizes 11 and up. All the problems that only one or two of the provers can be viewed
+in Fig \ref{fig:interesting}.
 
-\item The problem {\sf SYJ202} from the ILTP suite cannot be solved for sizes more than 10 within a few minutes. However, IntHistGC and fCube get stuck much earlier.
-\end{itemize}
+\begin{figure}[htd]
+\centering
+\input{table}
+\caption{
+All files where not all provers failed and not all provers succeeded.
+The hyphen means that the benchmark did not finish within the 300 second limit.
+\label{fig:interesting}
+}
+\end{figure}
+
+The problems {\tt intuit} struggled with were {\tt SYJ212} about
+nested equivalences associated in different directions. On these problems, the run time was not
+increasing as a function of the size of the problem. (Hence there are some gaps in Fig \ref{fig:interesting}: only the instances where
+{\tt intuit} times out are shown.) The cause of this is yet uncertain. (TODO: show also the ones that did finish in time?)
+
+% Surprisingly, the method in this paper can solve most problems within 1 second, and {\bf almost all problems within 5 seconds}. The only two problems that do not fall into this category are:
+
+% \begin{itemize}
+% \item The problem {\sf nishimura2} from the IntHistGC benchmarks cannot be solved for size 35 within a few minutes. But neither can IntHistGC and fCube.
+
+% \item The problem {\sf SYJ202} from the ILTP suite cannot be solved for sizes more than 10 within a few minutes. However, IntHistGC and fCube get stuck much earlier.
+% \end{itemize}
 
 The following problems can be solved by the method in this paper but are out of reach for both of the other methods:
 
 \begin{itemize}
-\item The problems {\sf portia}, and {\sf negportia2} from the IntHistGC benchmarks can be solved for sizes up to 300 within 1 second, but the other provers get stuck on sizes below 50.
-
-\item The problem {\sf nishimura} from the IntHistGC benchmarks can be solved for sizes up to 30, but the other provers get stuck on much smaller sizes.
-
-\item The problem {\sf SYJ208} from the ILTP benchmark suite can be solved for all sizes up to 20. However, IntHistGC and fCube get stuck much earlier.
+\item {\tt mapf3x} (TODO: what is this about?),
+\item the pidgeon-hole problem {\tt SYJ202} for size 10. No implication clauses needs to be created for this problem: it is entirely propositional.
 \end{itemize}
 
-Many problems can be solved by either IntHistGC or fCube, but not both. Whenever one of them can solve it, the method in this paper can also solve it within similar or better times.
+% \begin{itemize}
+% \item The problems {\sf portia}, and {\sf negportia2} from the IntHistGC benchmarks can be solved for sizes up to 300 within 1 second, but the other provers get stuck on sizes below 50.
 
-These results may seem impressive, but as a note to the reader, the set of available standard benchmarks is way too small to draw any significant conclusion! Also, the prover in this paper was developed without access to any of these benchmarks on beforehand.
+% \item The problem {\sf nishimura} from the IntHistGC benchmarks can be solved for sizes up to 30, but the other provers get stuck on much smaller sizes.
+
+% \item The problem {\sf SYJ208} from the ILTP benchmark suite can be solved for all sizes up to 20. However, IntHistGC and fCube get stuck much earlier.
+% \end{itemize}
+
+% Many problems can be solved by either IntHistGC or fCube, but not both. Whenever one of them can solve it, the method in this paper can also solve it within similar or better times.
+
+The runtimes can be compared in the scatter plots (Fig \ref{scatterplots}).
+TODO: Describe the timeouts for the different tools and the points that take a lot of time for intuit.
+
+\input{scatterplot}
+\scatterplots{all}
+% \scatterplots{koen}
+% \scatterplots{gen}
+% \scatterplots{iltp}
+
+As a note to the reader, the set of available standard benchmarks is way too small to draw any significant conclusions. The prover in this paper was developed without access to any of these benchmarks on beforehand.
 
 %---------------------------------------------------------------------------
 %- future work

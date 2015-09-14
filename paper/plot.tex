@@ -3,55 +3,8 @@
 \usepackage{pgfplots}
 \usepackage[margin=1cm]{geometry}
 \usepackage{pgfplotstable}
+\usepackage{dcolumn}
 \begin{document}
-
-\newcommand{\scatterplot}[4]{
-
-\begin{tikzpicture}
-\begin{axis}[
-  xlabel={#1},
-  ylabel={#2},
-  enlargelimits=false,
-  axis lines=left,
-  grid = major,
-  xmode = log,
-  ymode = log,
-  xmin = #4,
-  xmax = 300,
-  ymin = #4,
-  ymax = 300,
-  grid style={dashed, gray!30},
-  width=8cm,
-  height=8cm,
-  scatter/classes={%
-    Validkoen={mark=*,green!50!black},%
-    Validgen={mark=*,green!70!black},%
-    Validiltp={mark=*,green!90!black},%
-    CounterSatisfiablekoen={mark=triangle*,red!50!black},%
-    CounterSatisfiablegen={mark=triangle*,red!70!black},%
-    CounterSatisfiableiltp={mark=triangle*,red!90!black},%
-    Openkoen={mark=square,draw=black},%
-    Opengen={mark=square,draw=black},%
-    Openiltp={mark=square,draw=black}},
-]
-
-\addplot[
-	only marks,
-	scatter,
-	mark size=1.6pt,
-%    nodes near coords,
-    scatter src=explicit symbolic,
-%    point meta=explicit symbolic,
-%    black,
-]
-table[x=x, y=y, meta=label]
-	{#3};
-
-\draw[-, gray!30] (-7,-7) -- (5,5);
-
-\end{axis}
-\end{tikzpicture}
-}
 
 \begin{figure}
 \centering
@@ -61,21 +14,10 @@ All files where not all provers failed and not all provers succeeded.
 }
 \end{figure}
 
-% \input{cumuplot}
 
-\newcommand{\scatterplots}[1]{
-\begin{figure}\small
-\begin{minipage}[b]{.5\linewidth}
-\centering
-\scatterplot{intuit}{IntHistGC -b -c -c3}{#1_intuit_vs_bcc3}{0.001}
-\end{minipage}
-\begin{minipage}[b]{.5\linewidth}
-\centering
-\scatterplot{intuit}{fCube}{#1_intuit_vs_fcube}{0.001}
-\end{minipage}
-\caption{#1}
-\end{figure}
-}
+% \input{cumuplot}
+%
+\input{scatterplot}
 
 \scatterplots{all}
 \scatterplots{koen}
