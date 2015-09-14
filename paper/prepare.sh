@@ -2,14 +2,23 @@ for i in all koen gen iltp; do
 
 ./prepare-cumu.sh <(./${i}.sh intuit_300_           ) > ${i}_intuit
 ./prepare-cumu.sh <(./${i}.sh prover_300_-b_-c_-c3_ ) > ${i}_inthistgc_bcc3
-# ./prepare-cumu.sh <(./${i}.sh prover_300_-b_-c2_-c3_) > ${i}_inthistgc_bc2c3
 ./prepare-cumu.sh <(./${i}.sh fCube.bash_300_       ) > ${i}_fcube
 
-./prepare-scatter.sh <(./${i}.sh intuit_300_) <(./${i}.sh fCube.bash_300_       ) > ${i}_intuit_vs_fcube
-./prepare-scatter.sh <(./${i}.sh intuit_300_) <(./${i}.sh prover_300_-b_-c_-c3_ ) > ${i}_intuit_vs_bcc3
-# ./prepare-scatter.sh <(./${i}.sh intuit_300_) <(./${i}.sh prover_300_-b_-c2_-c3_) > ${i}_intuit_vs_bc2c3
+done
+
+echo x y label > all_intuit_vs_fcube
+echo x y label > all_intuit_vs_bcc3
+
+for i in koen gen iltp; do
+
+./prepare-scatter.sh <(./${i}.sh intuit_300_) <(./${i}.sh fCube.bash_300_       ) <(./${i}.sh benchmark-status) ${i} > ${i}_intuit_vs_fcube
+./prepare-scatter.sh <(./${i}.sh intuit_300_) <(./${i}.sh prover_300_-b_-c_-c3_ ) <(./${i}.sh benchmark-status) ${i} > ${i}_intuit_vs_bcc3
+
+tail -n +2 ${i}_intuit_vs_fcube >> all_intuit_vs_fcube
+tail -n +2 ${i}_intuit_vs_bcc3  >> all_intuit_vs_bcc3
 
 done
+
 
 cp intuit_300_           us
 cp prover_300_-b_-c_-c3_ histgc
