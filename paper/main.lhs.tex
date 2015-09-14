@@ -56,7 +56,9 @@
 %format B_j
 %format B_m
 
+%format w0
 %format w1
+%format w2
 
 %format chi = "\chi"
 %format chi1
@@ -245,7 +247,7 @@ The set |A'| in the |Yes| answer can be produced by most modern SAT-solvers. Som
 
 \subsection{Proving Procedure}
 
-The complete proving procedure (after transformation to canonical form) is pictured in ~25 lines of code in Figs.\ \ref{fig:top-level}--\ref{fig:check}.
+The complete proving procedure (after transformation to canonical form) is pictured in \~25 lines of code in Figs.\ \ref{fig:top-level}--\ref{fig:check}.
 
 \begin{figure}[t]
 \begin{center}
@@ -384,15 +386,15 @@ As to (2), all flat clauses in the SAT-solver either directly come from the set 
 
 ~\\ \noindent{\bf Completeness}$\;$ We show that when the algorithm terminates with a |No(M)| answer, there exists an intuitionistic Kripke model with a ``starting world´´ $w_0$ that satisfies all flat clauses, all implication clauses, and in which the proof goal |q| is false. We construct this Kripke model below.
 
-Consider the last top-level call to |intuitCheck|, the call that validated the last model that was found. It executed many (recursive) calls to |intuitCheck|, each of them returning |True|. Now, let each of these calls be a unique world |w| in the set of worlds |W|. The valuation |M(w)| associated with each world |w| is the model |M| with which the corresponding call of |intuitCheck| was given. The world |w_0| is associated with the top-level call to |intuitCheck|.
+Consider the last top-level call to |intuitCheck|, the call that validated the last model that was found. It executed many (recursive) calls to |intuitCheck|, each of them returning |True|. Now, let each of these calls be a unique world |w| in the set of worlds |W|. The valuation |M(w)| associated with each world |w| is the model |M| with which the corresponding call of |intuitCheck| was given. The world |w0| is associated with the top-level call to |intuitCheck|.
 
 Define the call-relation |C| as follows: |w1 C w2| if and only if the call |w1| made the call |w2|. The accessibility relation |<=| on |W| is defined to be the {\em reflexive, transitive} closure of |C|. The relation |<=| satisfies the {\em persistency condition}: each call to |intuitCheck| makes the set of true atoms larger by adding the atom |a| to |M| in the calls to |intuitProve|.
 
 All flat clauses in |R| are satisfied by the valuations of all |w|, because all of these are models of the SAT-solver |s|, which guarantees that all flat clauses are made true by all models. This also means that all flat clauses are true in all |w|.
 
-The proof goal |q| is false in |w_0|, because the top-level call to |intuitProve| generated a counter-model to |q|.
+The proof goal |q| is false in |w0|, because the top-level call to |intuitProve| generated a counter-model to |q|.
 
-All implication clauses in |X| are true in |w_0|. To see this, consider an implication clause |chi = (a->b)->c| from |X| and a world |w| in which |a->b| is true, but |c| is false. If |c| is false in |w|, then so is |b|, because we have the flat clause |b->c| that we added to |s|. If |b| is false in |w|, then so is |a|, because |a->b| is true in |w| by our assumption. Every world is reachable by |C|-steps from |w_0|, and thus so is |w|. By persistency, |a,b,c| must be false in {\em every} world on the |C|-path from |w_0| to |w|. This means that the implication clause |chi| is still part of the set of implication clauses that belonged to the |intuitCheck|-call represented by |w|. This means that a call to |intuitProve| will be made from |w| in which |a| will be added to the assumptions, and with |b| as the goal, and which furthermore returns with |No(-)|. This contradicts our assumption that |a->b| is true in |w|. So, all original implication clauses are true in |w_0|.
+All implication clauses in |X| are true in |w0|. To see this, consider an implication clause |chi = (a->b)->c| from |X| and a world |w| in which |a->b| is true, but |c| is false. If |c| is false in |w|, then so is |b|, because we have the flat clause |b->c| that we added to |s|. If |b| is false in |w|, then so is |a|, because |a->b| is true in |w| by our assumption. Every world is reachable by |C|-steps from |w0|, and thus so is |w|. By persistency, |a,b,c| must be false in {\em every} world on the |C|-path from |w0| to |w|. This means that the implication clause |chi| is still part of the set of implication clauses that belonged to the |intuitCheck|-call represented by |w|. This means that a call to |intuitProve| will be made from |w| in which |a| will be added to the assumptions, and with |b| as the goal, and which furthermore returns with |No(-)|. This contradicts our assumption that |a->b| is true in |w|. So, all original implication clauses are true in |w0|.
 
 %---------------------------------------------------------------------------
 %- optimizations
@@ -442,7 +444,7 @@ Conclusion: We are still interested in minimization, but we need to (1) find bet
 
 The algorithm can be adapted to keep a table of already found and checked models, which grows during calls of |intuitCheck|. Whenever we call |intuitProve|, we can consult the table of models to see if we can immediately see that the answer is going to be |No(-)|.
 
-We have implemented this optimization, and have evaluated it on some formulas, with promising results. However, we have not had enough time to properly evaluate this optimization for this version of the paper, but we are confident we can do this before we prepare the final version of this paper.
+We have implemented this optimization, but have not thoroughly evaluated it. This remains future work.
 
 %---------------------------------------------------------------------------
 %- experimental results
