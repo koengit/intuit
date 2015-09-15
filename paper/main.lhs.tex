@@ -515,7 +515,7 @@ The problems |cross2x| -- |mapf3x| are all instances of the API benchmark suite.
 
 The problems |SYJ202| are pidgeon-hole problems. In fact, after generating clauses in the fashion described in this paper, there were no implication clauses generated, and thus the problems became purely classical! No surprise that {\tt intuit} does well on these, given that it uses a state-of-the-art SAT-solver internally.
 
-The problems that {\tt intuit} struggled with (and which are the outliers in the scatterplots in Fig.\ \scatterplots}) are all instances of |SYJ212|. These are problems that are all counter-satisfiable, and consist of long chains of nested equivalences.
+The problems that {\tt intuit} struggled with (and which are the outliers in the scatterplots in Fig.\ \ref{scatterplots}) are all instances of |SYJ212|. These are problems that are all counter-satisfiable, and consist of long chains of nested equivalences.
 Interestingly, on these problems, the running time of {\tt intuit} was not
 increasing as a function of the size of the problem. Hence there are some gaps in the figure: only the instances where {\tt intuit} times out are shown. The reason for this is not completely obvious to us; it seems that {\tt intuit} seems particularly sensitive to exactly what models are found by the SAT-solver on these problems. Sometimes, the models indicate just the right implications to check, leading to intuitionistic models quickly, and other times, the models lead the prover astray, and it takes a long time. 
 
