@@ -38,12 +38,21 @@ rm -f interesting
 ./compare.sh histgc withfcube
 ./compare.sh fcube withhistgc
 
-echo '\begin{tabular}{lllll}'
-echo 'file & us & histgc & fcube \\'
+
+echo '\newcolumntype{d}{D{.}{.}{-1} }'
+echo '\begin{tabular}{l d d d l l}'
+echo '\multicolumn{1}{c}{Benchmark} &'
+echo '\multicolumn{1}{c}{Our Tool} &'
+echo '\multicolumn{1}{c}{IntHistGC} &'
+echo '\multicolumn{1}{c}{fCube} &'
+echo '\multicolumn{1}{c}{Status} \\'
 for i in $(sort -u interesting); do
   echo '\verb!'$i'! &'
-  for t in us histgc fcube; do
-    grep "^${i}\.p" $t | sed 's/^[^,]*,//'
+  for t in us histgc fcube benchmark-status; do
+    grep "^${i}\.p" $t | sed 's/^[^,]*,//' |
+       sed 's/Valid/\\verb!Valid!/' |
+       sed 's/CounterSatisfiable/\\verb!CoSat!/' |
+       sed 's/\.\([0-9]\{2\}\)[0-9]*/.\1/'
     echo '&'
   done
   echo '\\'
