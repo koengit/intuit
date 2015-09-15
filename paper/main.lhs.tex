@@ -26,12 +26,12 @@
 
 \maketitle
 
-%format phi = "\varphi"
+%format phi = A
 %format phi1
 %format phi2
 %format phi_i
 %format phi_n
-%format psi = "\psi"
+%format psi = B
 %format psi1
 %format psi_i
 %format psi_n
@@ -65,11 +65,11 @@
 %format w1
 %format w2
 
-%format chi = "\chi"
+%format chi = "\iota"
 %format chi1
 %format chi2
 
-%format zeta = "\zeta"
+%format zeta = C
 %format xi = "\xi"
 %format theta = "\vartheta"
 %format |- = "\vdash"
@@ -112,7 +112,7 @@ $$
 $$
 \begin{code}
                       phi, zeta    |- phi                       (K)
-phi->   zeta-> psi,   phi -> zeta  |- phi -> psi                (S)
+phi->   psi-> zeta,   phi ->  psi  |- phi -> zeta               (S)
 
                       phi && psi   |- phi                       (FST)
                       phi && psi   |- psi                       (SND)
@@ -223,13 +223,13 @@ an implication does not have the right shape, as dictated by the clause being a 
 In the above, |a| stands for either a regular atom, or one of
 the constants |bottom| or |top|. In order to have atoms appear at the right places, we can use the following 5 transformation steps:
 \begin{code}
-                   phi   ->  (.. || psi || ..)  ///  ->>                        phi   -> (.. || b || ..), ///  b -> psi
-(.. &&  phi    &&  ..)   ->  psi                     ->> /// (.. &&  b &&  ..)        -> psi,                  phi -> b
-        (zeta  ->  phi)  ->  psi                     ->> ///         (b     ->  phi)  -> psi,                  b -> zeta
-        (zeta  ->  phi)  ->  psi                     ->> ///         (zeta  ->  b)    -> psi,                  phi -> b
-        (zeta  ->  phi)  ->  psi                     ->> ///         (zeta  ->  phi)  -> b,                    b -> psi
+                  phi   ->  (.. || psi || ..)  ///  ->> /// phi  -> (.. || b || ..),   b -> psi
+(.. &&  phi   &&  ..)   ->  psi                     ->> /// (.. &&  b &&  ..) -> psi,  phi -> b
+        (phi  ->  psi)  ->  zeta                    ->> /// (a    ->  psi)  -> zeta,   a -> phi
+        (phi  ->  psi)  ->  zeta                    ->> /// (phi  ->  b)    -> zeta,   psi -> b
+        (phi  ->  psi)  ->  zeta                    ->> /// (phi  ->  psi)  -> c,      c -> zeta
 \end{code}
-In the above rules, |b| appearing on the right-hand side of a rule denotes a fresh atom not appearing anywhere else.
+In the above rules, |a|, |b| and |c| appearing on the right-hand side of a rule denotes a fresh atom not appearing anywhere else.
 
 The above rules are a complete set of rules to turn any formula |psi| into a set of flat clauses |R| and implication clauses |X|. The combined size of the clauses in |R| and |X| can be kept to at most twice the size of the size of the original formula |psi|, because we never copy whole formulas, and we only need to introduce a fresh atom |b| for any subformula at most once.
 
@@ -252,7 +252,7 @@ The set |A'| in the |Yes| answer can be produced by most modern SAT-solvers. Som
 
 \subsection{Proving Procedure}
 
-The complete proving procedure (after transformation to canonical form) is pictured in \~25 lines of code in Figs.\ \ref{fig:top-level}--\ref{fig:check}.
+The complete proving procedure (after transformation to canonical form) is pictured in $\approx$25 lines of code in Figs.\ \ref{fig:top-level}--\ref{fig:check}.
 
 \begin{figure}[t]
 \begin{center}
