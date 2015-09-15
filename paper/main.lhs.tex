@@ -461,22 +461,16 @@ In this section, we compare our method against other, existing methods for autom
 \paragraph{Competing tools} The main competitors for automated proof for intuitionistic propositional logic are IntHistGC \cite{rajeev} and fCube \cite{fcube}. Both are provers that perform a backtracking search directly on a proof calculus, and are therefore rather different from the approach taken here. IntHistGC implements clever backtracking optimizations that avoid recomputations in many cases. fCube implements several pruning techniques on a tableau-based calculus.
 
 \paragraph{Benchmarks} We have used three different benchmark suites to compare the provers experimentally.
-
 \begin{itemize}
-
 \item ILTP \cite{iltp}, these are 12 problems parametrized by a size. Being from 2006, this is a quite old set of benchmarks now. We used the extended version that was used in the evaluation of IntHistGC. In this version, two problems were generated up to size 38 and all other problems up to size 100, leading up to a total of 555 problem instances.
  
 \item IntHistGC benchmarks, these are 6 problems parametrized by a natural number. These benchmarks are newer. They are carefully constructed sequences of formulas that separate classical and intuitionistic logic. The total number of instances here is 610.
 
 \item API solving, these are 10 problems where a rather large API (set of functions with types) is given, and the problem is to construct a new function of a given type. Each problem has variants with API sizes that vary in size from a dozen to a few thousand functions. These problems were constructed by the authors in an attempt to create practically useful problems. The total number of instances here is 35.
-
 \end{itemize}
+The total number of benchmark problems we used is 1200. All three suites contain benchmarks that are provable as well as not provable (counter-satisfiable). All benchmarks are available from {\sf github.com/koengit/intuit}. We did not have access to these benchmarks when we developed our tool.
 
-The total number of benchmark problems we used is 1200. All three suites contain benchmarks that are provable as well as not provable (counter-satisfiable). All benchmarks are available from {\sf github.com/koengit/intuit}.
-
-We did not have access to these benchmarks when we developed our tool.
-
-(As a side note to the reader, although we tried our best to find realistic and useful benchmarks, the set of available standard benchmarks is way too small to draw significant conclusions about the practical usability of any of these tools.)
+%(As a side note to the reader, although we tried our best to find realistic and useful benchmarks, the set of available standard benchmarks is way too small to draw significant conclusions about the practical usability of any of these tools.)
 
 \paragraph{Experimental set-up} The experiments were run on a 2013 laptop computer
 with an Intel Xeon E3-1200 v2 processor and the processer was allowed 7 GB of RAM.
@@ -499,7 +493,7 @@ More interesting is to compare the running times. We compare our tool {\tt intui
 
 We can see that {\tt intuit} outperforms both IntHistGC and fCube significantly on virtually all provable problems. The comparison for unprovable problems is in favor of {\tt intuit} as well, although there are a few outliers that demand further scrutiny.
 
-\begin{figure}[htd]
+\begin{figure}[td]
 \centering
 \input{table}
 \caption{
@@ -508,14 +502,13 @@ Interesting problems (where one tool failed but not all)
 }
 \end{figure}
 
-\paragraph{Problem analyses}
 We show a table of ``interesting'' problems (problems that were out of reach for at least one tool but not for all tools) in Fig.\ \ref{fig:interesting}.
 
-The problems |cross2x| -- |mapf3x| are all instances of the API benchmark suite. They contain relatively large sets of axioms, of which typically only a few are needed for a proof, which is representative for automatically generated verification problems in general. Our tool {\tt intuit} does well on these.
+The problems {\tt cross2x} -- {\tt mapf3x} are all instances of the API benchmark suite. They contain relatively large sets of axioms, of which typically only a few are needed for a proof, which is representative for automatically generated verification problems in general. Our tool {\tt intuit} does well on these.
 
-The problems |SYJ202| are pidgeon-hole problems. In fact, after generating clauses in the fashion described in this paper, there were no implication clauses generated, and thus the problems became purely classical! No surprise that {\tt intuit} does well on these, given that it uses a state-of-the-art SAT-solver internally.
+The problems {\tt SYJ202} are pidgeon-hole problems. In fact, after generating clauses in the fashion described in this paper, there were no implication clauses generated, and thus the problems became purely classical! No surprise that {\tt intuit} does well on these, given that it uses a state-of-the-art SAT-solver internally.
 
-The problems that {\tt intuit} struggled with (and which are the outliers in the scatterplots in Fig.\ \ref{scatterplots}) are all instances of |SYJ212|. These are problems that are all counter-satisfiable, and consist of long chains of nested equivalences.
+The problems that {\tt intuit} struggled with (and which are the outliers in the scatterplots in Fig.\ \ref{scatterplots}) are all instances of {\tt SYJ212}. These are problems that are all counter-satisfiable, and consist of long chains of nested equivalences.
 Interestingly, on these problems, the running time of {\tt intuit} was not
 increasing as a function of the size of the problem. Hence there are some gaps in the figure: only the instances where {\tt intuit} times out are shown. The reason for this is not completely obvious to us; it seems that {\tt intuit} seems particularly sensitive to exactly what models are found by the SAT-solver on these problems. Sometimes, the models indicate just the right implications to check, leading to intuitionistic models quickly, and other times, the models lead the prover astray, and it takes a long time. 
 
@@ -538,12 +531,9 @@ increasing as a function of the size of the problem. Hence there are some gaps i
 
 \section{Future Work}
 
-This section describes some ideas we have for future work.
-
 The main reason for initiating the work described in this paper was to understand how to build a scalable prover for a logic like intuitionistic propositional logic. However, the number of practical applications of intuitionistic propositional logic is limited. We believe that our insights can benefit two other kinds of logic that have more applications: classical modal logics and intuitionistic first-order logic.
 
-\subsection{Generalization to modal logic}
-
+\paragraph{Generalization to modal logic}
 %format box = "\Box\!"
 %format dia = "\lozenge\!\!"
 We are currently building a theorem prover for classical modal logic based on the same ideas as presented in this paper. When we want to prove a formula |phi|, we generate a fresh literal |q|, and generate constraints that represent the formula |box(phi -> q)|. The insight is that, in order to do so, it is enough to consider constraints of one of the following three shapes:
@@ -555,10 +545,8 @@ We are currently building a theorem prover for classical modal logic based on th
 Just like the prover we have described in this paper, the theorem prover for modal
 logic uses one SAT-solver that stores all constraints that hold in all worlds, which are the formulas |p| above. If |q| can be proven from these, the proof is done. Otherwise, we get a counter-model which satisfies all |p| but not |q|, and we have to investigate whether or not constraints of type 2. and 3. are fulfilled. If the answer is yes, we have found a counter model to |phi|, otherwise, more constraints of type 1. will be generated and we start over.
 
-\subsection{Generalization to intuitionistic first-order logic}
-
+\paragraph{Generalization to intuitionistic first-order logic}
 We also have started to look at building an automated prover for intuitionistic first-order logic. There are two strands of work here.
-
 The first basically augments a standard SMT-solver with implication clauses. Most SMT-solvers have a heuristic for instantiating universal quantifiers. After that, the implication clauses are dealt with in the same way as in this paper.
 
 However, this can only deal with a fragment of first-order logic. To cope with the full logic,
@@ -588,8 +576,7 @@ Intuitionistic propositional logic seems to have limited practical applications,
 %---------------------------------------------------------------------------
 %- acks
 
-\section*{Acknowledgments}
-
+\paragraph{Acknowledgments}
 We thank Thierry Coquand and Rajeev Gore for feedback on earlier versions of
 this work.
 
