@@ -468,7 +468,7 @@ In this section, we compare our method against other, existing methods for autom
 
 \item API solving, these are 10 problems where a rather large API (set of functions with types) is given, and the problem is to construct a new function of a given type. Each problem has variants with API sizes that vary in size from a dozen to a few thousand functions. These problems were constructed by the authors in an attempt to create practically useful problems. The total number of instances here is 35.
 \end{itemize}
-The total number of benchmark problems we used is 1200. All three suites contain benchmarks that are provable as well as not provable (counter-satisfiable). All benchmarks are available from {\sf github.com/koengit/intuit}. We did not have access to these benchmarks when we developed our tool.
+The total number of benchmark problems we used is 1200. We did not have access to these benchmarks when we developed our tool.
 
 %(As a side note to the reader, although we tried our best to find realistic and useful benchmarks, the set of available standard benchmarks is way too small to draw significant conclusions about the practical usability of any of these tools.)
 
@@ -476,19 +476,15 @@ The total number of benchmark problems we used is 1200. All three suites contain
 with an Intel Xeon E3-1200 v2 processor and the processes were allowed 7 GB of RAM.
 IntHistGC was run with its best flags ({\tt -b -c -c3}). We used the latest versions of the tools: fCube version 11.1 and IntHistGC 1.29. We used a 300 second timeout.
 
-\paragraph{Results} With a 300 second time-out, all three tools can solve a good portion of the benchmarks. Our tool {\tt intuit} solved all but 37 benchmarks, fCube solved all but 38 benchmarks, and IntHistGC all but 39.
-
-% Surprisingly, the method in this paper can solve most problems within 1 second, and {\bf almost all problems within 5 seconds}. The only two problems that do not fall into this category are:
-
-% \begin{itemize}
-% \item The problem {\sf nishimura2} from the IntHistGC benchmarks cannot be solved for size 35 within a few minutes. But neither can IntHistGC and fCube.
-
-% \item The problem {\sf SYJ202} from the ILTP suite cannot be solved for sizes more than 10 within a few minutes. However, IntHistGC and fCube get stuck much earlier.
-% \end{itemize}
-
 \input{scatterplot}
 \scatterplots{all}
 
+\paragraph{Results} All three tools eventually solve a good portion of the benchmarks: our tool {\tt intuit} solved all but 37 benchmarks, fCube solved all but 38 benchmarks, and IntHistGC all but 39.
+% Surprisingly, the method in this paper can solve most problems within 1 second, and {\bf almost all problems within 5 seconds}. The only two problems that do not fall into this category are:
+% \begin{itemize}
+% \item The problem {\sf nishimura2} from the IntHistGC benchmarks cannot be solved for size 35 within a few minutes. But neither can IntHistGC and fCube.
+% \item The problem {\sf SYJ202} from the ILTP suite cannot be solved for sizes more than 10 within a few minutes. However, IntHistGC and fCube get stuck much earlier.
+% \end{itemize}
 More interesting is to compare the running times. We compare our tool {\tt intuit} against IntHistGC and fCube for provable problems (Valid) and unprovable problems (CoSat) in Fig.\ \ref{scatterplots}. All time axes are logarithmic. 
 
 We can see that {\tt intuit} outperforms both IntHistGC and fCube significantly on virtually all provable problems. The comparison for unprovable problems is in favor of {\tt intuit} as well, although there are a few outliers that demand further scrutiny.
