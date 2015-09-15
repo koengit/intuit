@@ -145,7 +145,7 @@ By modern, we mean that we would like to make use of the enormous recent advance
 
 It is perhaps surprising that we ask this question, because at first sight it does not seem natural to embed intuitionistic logic into classical logic; after all, we can derive much more in classical logic than intuitionistic logic.
 
-The key insight we make use of comes from Barr \cite{barr}. Given a set |S| of propostional clauses of the shape:
+The key insight we make use of comes from Barr \cite{barr}. Given a set |S| of propositional clauses of the shape:
 \begin{code}
 (a1 && .. && a_n) -> (b1 || .. || b_m)
 \end{code}
@@ -485,7 +485,7 @@ IntHistGC was run with its best flags ({\tt -b -c -c3}). We used the latest vers
 % \item The problem {\sf nishimura2} from the IntHistGC benchmarks cannot be solved for size 35 within a few minutes. But neither can IntHistGC and fCube.
 % \item The problem {\sf SYJ202} from the ILTP suite cannot be solved for sizes more than 10 within a few minutes. However, IntHistGC and fCube get stuck much earlier.
 % \end{itemize}
-More interesting is to compare the running times. We compare our tool {\tt intuit} against IntHistGC and fCube for provable problems (Valid) and unprovable problems (CoSat) in Fig.\ \ref{scatterplots}. All time axes are logarithmic. 
+More interesting is to compare the running times. We compare our tool {\tt intuit} against IntHistGC and fCube for provable problems (\verb!Valid!) and unprovable problems (\verb!CoSat!) in Fig.\ \ref{scatterplots}. All time axes are logarithmic.
 
 We can see that {\tt intuit} outperforms both IntHistGC and fCube significantly on virtually all provable problems. The comparison for unprovable problems is in favor of {\tt intuit} as well, although there are a few outliers that demand further scrutiny.
 
@@ -502,7 +502,7 @@ We show a table of ``interesting'' problems (problems that were out of reach for
 
 The problems {\tt cross2x} -- {\tt mapf3x} are all instances of the API benchmark suite. They contain relatively large sets of axioms, of which typically only a few are needed for a proof, which is representative for automatically generated verification problems in general. Our tool {\tt intuit} does well on these.
 
-The problems {\tt SYJ202} are pidgeon-hole problems. In fact, after generating clauses in the fashion described in this paper, there were no implication clauses generated, and thus the problems became purely classical! No surprise that {\tt intuit} does well on these, given that it uses a state-of-the-art SAT-solver internally.
+The problems {\tt SYJ202} are pigeon-hole problems. In fact, after generating clauses in the fashion described in this paper, there were no implication clauses generated, and thus the problems became purely classical! No surprise that {\tt intuit} does well on these, given that it uses a state-of-the-art SAT-solver internally.
 
 The problems that {\tt intuit} struggled with (and which are the outliers in the scatterplots in Fig.\ \ref{scatterplots}) are all instances of {\tt SYJ212}. These are problems that are all counter-satisfiable, and consist of long chains of nested equivalences.
 Interestingly, on these problems, the running time of {\tt intuit} was not
