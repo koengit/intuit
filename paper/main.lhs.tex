@@ -224,7 +224,7 @@ In the above, |a| stands for either a regular atom, or one of
 the constants |bottom| or |top|. In order to have atoms appear at the right places, we can use the following 5 transformation steps:
 \begin{code}
                   phi   ->  (.. || psi || ..)  ///  ->> /// phi  -> (.. || b || ..),   b -> psi
-(.. &&  phi   &&  ..)   ->  psi                     ->> /// (.. &&  b &&  ..) -> psi,  phi -> b
+(.. &&  phi   &&  ..)   ->  psi                     ->> /// (.. &&  a &&  ..) -> psi,  phi -> a
         (phi  ->  psi)  ->  zeta                    ->> /// (a    ->  psi)  -> zeta,   a -> phi
         (phi  ->  psi)  ->  zeta                    ->> /// (phi  ->  b)    -> zeta,   psi -> b
         (phi  ->  psi)  ->  zeta                    ->> /// (phi  ->  psi)  -> c,      c -> zeta
