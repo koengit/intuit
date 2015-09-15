@@ -381,9 +381,9 @@ The mutual recursion between |intuitProve| and |intuitCheck| terminates because 
 As to (1), this observation was already made by Barr \cite{barr}, but we briefly restate the argument here. Any classical inference of a flat clause from a set of flat clauses can be simulated by the resolution rule:
 $$
 \frac
-{|phi -> (psi |||| a) /// ///
-  (a && theta) -> zeta|}
-{|(phi && theta) -> (psi |||| zeta)|}|///(RES)|
+{|A -> (C |||| a) /// ///
+  (a && B) -> D|}
+{|(A && B) -> (C |||| D)|}|///(RES)|
 $$
 The resolution rule |(RES)| as stated above also holds intuitionistically. Thus, any classical proof deriving a flat clause from a set of flat clauses also admits an intuitionistic proof.
 
