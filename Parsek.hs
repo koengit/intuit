@@ -1,4 +1,5 @@
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE MonadFailDesugaring #-}
 
 {-
 Parsek -- Copyright (c) 2003-2007, Koen Claessen
@@ -107,6 +108,10 @@ import Control.Monad
   , ap
   )
 
+import Control.Monad.Fail
+  ( MonadFail(..)
+  )
+
 import qualified Control.Applicative as CA
 
 import Data.List
@@ -163,6 +168,7 @@ instance Monad (Parser s) where
   Parser f >>= k =
     Parser (\fut -> f (\a -> let Parser g = k a in g fut))
 
+instance MonadFail (Parser s) where
   fail s =
     Parser (\fut exp -> Fail exp [s])
 

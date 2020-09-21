@@ -1,3 +1,4 @@
+{-# LANGUAGE MonadFailDesugaring #-}
 module ParseProblem where
 
 import System.IO.Error as E
