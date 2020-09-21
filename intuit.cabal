@@ -14,7 +14,7 @@ cabal-version:       >=1.10
 
 executable intuit
   main-is:             Intuit.hs
-  -- other-modules:
+  other-modules:       Clausify, Incremental, ParseProblem, Parsek
   other-extensions:    TypeOperators, RankNTypes
   build-depends:       base >=4, minisat >=0.1 && <0.2, containers >=0.4
   -- hs-source-dirs:
